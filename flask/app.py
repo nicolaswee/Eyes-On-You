@@ -331,10 +331,6 @@ def timeseries_tray_out():
 #
 #####################################################################################################################
 
-@app.route('/ratio_of_tray_table', methods=['GET'])
-def get_ratio_of_tray_table():
-    pass
-
 # RATIO OF PEOPLE THAT CLEAR TABLE PER TABLE
 @app.route('/ratio_of_people_table', methods=['GET'])
 def get_ratio_of_people_table():
@@ -352,6 +348,9 @@ def get_ratio_of_people_table():
     total_people = 0
     last_seen_table = float('inf')
     prev_seen_chairs = 4
+    total_trays = 0
+    curr_trays = 0
+    clean_trays = 0
 
     for item in responses['Items']:
         temp_object = item['object'].replace("\'", "\"")
@@ -367,6 +366,9 @@ def get_ratio_of_people_table():
                 if obj['object_name'] == "chair":
                     curr_chairs += 1
             if curr_chairs == 4:
+                total_trays += curr_trays
+                clean_trays += curr_trays
+                curr_trays = 0
                 got_clear += curr_chairs - prev_seen_chairs
                 total_people += curr_chairs - prev_seen_chairs
                 prev_seen_chairs = curr_chairs
@@ -374,13 +376,21 @@ def get_ratio_of_people_table():
             for obj in objects:
                 if obj['object_name'] == "chair":
                     curr_chairs += 1
+                elif obj['object_name'] == "tray":
+                    curr_trays += 1
             if curr_chairs == 4:
+                total_trays += curr_trays
+                curr_trays = 0
                 total_people += curr_chairs - prev_seen_chairs
                 prev_seen_chairs = curr_chairs
             else:
                 prev_seen_chairs = curr_chairs
+
+        tray_ratio = 0.0
+        if total_trays != 0:
+            tray_ratio = clean_trays/total_trays
             
-    return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people}), 200
+    return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "total_trays": total_trays, "ratio_of_trays_return": tray_ratio}), 200
 
 # TIME SPENT AT TABLE AND TIME TO CLEAN
 @app.route('/number_of_tables', methods=['GET'])
@@ -434,7 +444,7 @@ def get_number_of_tables():
             elif curr_chairs != 4:
                 prev_seen_people = item['ts']
             
-    return jsonify({'status':True, "mean_time_spent": total_time_used/used_count, "mean_time_not_clean": total_time_not_clean/not_clean_count}), 200
+    return jsonify({'status':True, "mean_time_spent": int(total_time_used)/used_count, "mean_time_not_clean": int(total_time_not_clean)/not_clean_count}), 200
 
 #####################################################################################################################
 #
