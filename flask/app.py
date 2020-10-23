@@ -238,7 +238,7 @@ def get_group_size():
 
 @app.route("/total_number_trays_leave_store", methods=['GET'])
 def tray_leave_store():
-    table = DB.Table('Qr_Table')
+    table = DB.Table('qr_db')
 
     in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
 
@@ -247,7 +247,7 @@ def tray_leave_store():
     )
 
     count = 0
-
+    trays_returned = 0
     items = responses['Items']
 
     for item in items:
@@ -257,115 +257,49 @@ def tray_leave_store():
             in_store.remove(qr_id)
         else:
             in_store.add(qr_id)
+            trays_returned += 1
 
-    return jsonify({"Number of trays": count - 1})
+    return jsonify({"Trays used": count, "Trays returned": trays_returned})
 
-def tray_calculation(item_list):
-    if len(item_list) != 0:
-        first = item_list[0]
-        timings = []
-        for i in range(1,len(item_list)):
-            timings.append(item_list[i]['ts'] - first['ts'])
-            first = item_list[i]
-
-        return float(mean(timings)), float(sum(timings))
-
-    return 0,0
+#Don't need this but just keep in codebase
+# def tray_calculation(item_list):
+#     if len(item_list) != 0:
+#         first = item_list[0]
+#         timings = []
+#         for i in range(1,len(item_list)):
+#             timings.append(item_list[i]['ts'] - first['ts'])
+#             first = item_list[i]
+#
+#         return float(mean(timings)), float(sum(timings))
+#
+#     return 0,0
 
 @app.route("/tray_average_rate", methods=['GET'])
 def tray_average_rate():
-    table = DB.Table('Qr_Table')
-    total_tray = 0
-    total_time = 0
-    response_qr_1 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 1 ")
+    table = DB.Table('qr_db')
+
+    time_dictionary = {}
+    list_of_times = []
+
+    response = table.scan(
+        FilterExpression=Key('rpi_id').eq(1)
     )
 
-    qr_1_average, qr_1_total = tray_calculation(response_qr_1['Items'])
-    total_tray += response_qr_1['Count']
-    qr_1 = {"qr_1_average": qr_1_average, "qr_1_total": qr_1_total}
-    total_time += qr_1_total
+    items = response['Items']
 
-    response_qr_2 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 2 ")
-    )
-    total_tray += response_qr_2['Count']
-    qr_2_average, qr_2_total = tray_calculation(response_qr_2['Items'])
-    qr_2 = {"qr_2_average": qr_2_average, "qr_2_total": qr_2_total}
-    total_time += qr_2_total
+    for item in items:
+        if item['qr_id'] not in time_dictionary:
+            time_dictionary[item['qr_id']] = item['ts']
+        else:
+            time_difference = abs(item['ts'] - time_dictionary[item['qr_id']])
+            list_of_times.append(time_difference)
+            time_dictionary[item['qr_id']] = item['ts']
 
-    response_qr_3 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 3 ")
-    )
+    average_time = 0
+    if len(list_of_times) != 0:
+        average_time = float(mean(list_of_times))
 
-    total_tray += response_qr_3['Count']
-    qr_3_average, qr_3_total = tray_calculation(response_qr_3['Items'])
-    qr_3 = {"qr_3_average": qr_3_average, "qr_3_total": qr_3_total}
-    total_time += qr_3_total
-
-    response_qr_4 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 4 ")
-    )
-
-    total_tray += response_qr_4['Count']
-    qr_4_average, qr_4_total = tray_calculation(response_qr_4['Items'])
-    qr_4 = {"qr_4_average": qr_4_average, "qr_4_total": qr_4_total}
-    total_time += qr_4_total
-
-    response_qr_5 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 5 ")
-    )
-
-    total_tray += response_qr_5['Count']
-    qr_5_average, qr_5_total = tray_calculation(response_qr_5['Items'])
-    qr_5 = {"qr_5_average": qr_5_average, "qr_5_total": qr_5_total}
-    total_time += qr_5_total
-
-    response_qr_6 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 6 ")
-    )
-
-    total_tray += response_qr_6['Count']
-    qr_6_average, qr_6_total = tray_calculation(response_qr_6['Items'])
-    qr_6 = {"qr_6_average": qr_6_average, "qr_6_total": qr_6_total}
-    total_time += qr_6_total
-
-    response_qr_7 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 7 ")
-    )
-
-    total_tray += response_qr_7['Count']
-    qr_7_average, qr_7_total = tray_calculation(response_qr_7['Items'])
-    qr_7 = {"qr_7_average": qr_7_average, "qr_7_total": qr_7_total}
-    total_time += qr_7_total
-
-    response_qr_8 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 8 ")
-    )
-
-    total_tray += response_qr_8['Count']
-    qr_8_average, qr_8_total = tray_calculation(response_qr_8['Items'])
-    qr_8 = {"qr_8_average": qr_8_average, "qr_8_total": qr_8_total}
-    total_time += qr_8_total
-
-    response_qr_9 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 9 ")
-    )
-
-    total_tray += response_qr_9['Count']
-    qr_9_average, qr_9_total = tray_calculation(response_qr_9['Items'])
-    qr_9 = {"qr_9_average": qr_9_average, "qr_9_total": qr_9_total}
-    total_time += qr_9_total
-    response_qr_10 = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 10 ")
-    )
-
-    total_tray += response_qr_10['Count']
-    qr_10_average, qr_10_total = tray_calculation(response_qr_10['Items'])
-    qr_10 = {"qr_10_average": qr_10_average, "qr_10_total": qr_10_total}
-    total_time += qr_10_total
-
-    return jsonify({"result": [qr_1, qr_2, qr_3, qr_4, qr_5, qr_6, qr_7, qr_8, qr_9, qr_10], "total_tray": total_tray})
+    return jsonify({"result": average_time})
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
