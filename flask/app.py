@@ -222,7 +222,7 @@ def get_group_size():
 
 @app.route("/total_number_trays_leave_store", methods=['GET'])
 def tray_leave_store():
-    table = DB.Table('Qr_Table')
+    table = DB.Table('qr_db')
 
     in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
 
@@ -231,7 +231,7 @@ def tray_leave_store():
     )
 
     count = 0
-
+    trays_returned = 0
     items = responses['Items']
 
     for item in items:
@@ -241,8 +241,9 @@ def tray_leave_store():
             in_store.remove(qr_id)
         else:
             in_store.add(qr_id)
+            trays_returned += 1
 
-    return jsonify({"Number of trays": count - 1})
+    return jsonify({"Trays used": count, "Trays returned": trays_returned})
 
 #Don't need this but just keep in codebase
 # def tray_calculation(item_list):
@@ -259,7 +260,7 @@ def tray_leave_store():
 
 @app.route("/tray_average_rate", methods=['GET'])
 def tray_average_rate():
-    table = DB.Table('Qr_Table')
+    table = DB.Table('qr_db')
 
     time_dictionary = {}
     list_of_times = []
@@ -278,7 +279,9 @@ def tray_average_rate():
             list_of_times.append(time_difference)
             time_dictionary[item['qr_id']] = item['ts']
 
-    average_time = float(mean(list_of_times))
+    average_time = 0
+    if len(list_of_times) != 0:
+        average_time = float(mean(list_of_times))
 
     return jsonify({"result": average_time})
 
