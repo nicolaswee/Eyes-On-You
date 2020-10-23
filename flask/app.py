@@ -218,5 +218,75 @@ def get_group_size():
     
     return jsonify({'status':True, "message":"test"}), 200
 
+@app.route("/total_number_trays_leave_store", methods=['GET'])
+def tray_leave_store():
+    table = DB.Table('Qr_Table')
+
+    in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
+
+    responses = table.scan(
+        FilterExpression=Key('rpi_id').eq(1)
+    )
+
+    count = 0
+
+    items = responses['Items']
+
+    for item in items:
+        qr_id = item['qr_id']
+        if qr_id in in_store:
+            count += 1
+            in_store.remove(qr_id)
+        else:
+            in_store.add(qr_id)
+
+    return jsonify({"Number of trays": count - 1})
+
+# @app.route("/tray_average_rate", methods=['GET'])
+# def tray_average_rate():
+#     table = DB.Table('Qr_Table')
+#
+#     response_qr_1 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 1 ")
+#     )
+#
+#     response_qr_2 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 2 ")
+#     )
+#
+#     response_qr_3 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 3 ")
+#     )
+#
+#     response_qr_4 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 4 ")
+#     )
+#
+#     response_qr_5 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 5 ")
+#     )
+#
+#     response_qr_6 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 6 ")
+#     )
+#
+#     response_qr_7 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 7 ")
+#     )
+#
+#     response_qr_8 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 8 ")
+#     )
+#
+#     response_qr_9 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 9 ")
+#     )
+#
+#     response_qr_10 = table.scan(
+#         FilterExpression=Key('rpi_id').eq(1) & Attr('qr_id').eq(" 10 ")
+#     )
+#
+#     return jsonify({"Number of trays": "True"})
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
