@@ -457,7 +457,6 @@ def get_number_of_tables():
 # TODO: Ratio based on distance for that day [[distance, ratio], [distance, ratio]]
 @app.route('/ratio_of_people_distance', methods=['GET'])
 def get_ratio_of_people_distance():
-
     table = DB.Table('Object_Table')
     res = []
     date = datetime.utcnow() + timedelta(hours=8)
@@ -492,6 +491,25 @@ def get_ratio_of_people_distance():
                     last_seen_table = obj['ts']
             
     return jsonify({'status':True, "message":"test"}), 200
+
+@app.route('/number_of_trays', methods=['GET'])
+def get_number_of_trays():
+    rpi_id = request.args.get('rpi_id', default=None, type=int)
+    table = DB.Table('object_db')
+    res = []
+    date = datetime(2020, 10, 23, 23, 59, 59)
+    prev_day = date - timedelta(days=1)
+    responses = table.scan(
+        FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+    )
+    tray_count = 0
+    for item in responses['Items']:
+        temp_object = item['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        for obj in objects:
+            if obj['object_name'] == "tray":
+                tray_count += 1         
+    return jsonify({'status':True, "number_of_trays": tray_count}), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
