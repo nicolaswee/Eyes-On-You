@@ -220,7 +220,7 @@ def get_group_size():
     
     return jsonify({'status':True, "message":"test"}), 200
 
-@app.route("/total_number_trays_leave_store", methods=['GET'])
+@app.route("/trays_leave_store", methods=['GET'])
 def tray_leave_store():
     table = DB.Table('qr_db')
 
