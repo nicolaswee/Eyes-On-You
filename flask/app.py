@@ -131,44 +131,6 @@ def get_ratio_of_people():
             
     return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "groups_clear": res}), 200
 
-# @app.route('/ratio_of_trays_store_1', methods=['GET'])
-# def get_ratio_of_trays_store_1():
-
-#     table = DB.Table('Qr_Table')
-#     res = []
-#     date = datetime.utcnow() + timedelta(hours=8)
-#     prev_day = date - timedelta(days=1)
-#     store_1_responses = table.scan(
-#         FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-#     )
-#     store_2_responses = table.scan(
-#         FilterExpression=Key('rpi_id').eq(2)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-#     )
-#     return_tray_responses_store_1 = table.scan(
-#         FilterExpression=Key('rpi_id').eq(3)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
-#     )
-#     return_tray_responses_store_2 = table.scan(
-#         FilterExpression=Key('rpi_id').eq(3)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))&Attr('store_id').eq(" 2 ")
-#     )
-#     store_1 = set()
-#     store_2 = set()
-#     return_tray_store_1 = set()
-#     return_tray_store_2 = set()
-#     for item in store_1_responses['Items']:
-#         qr_id = int(item['qr_id'])
-#         store_1.add(qr_id)
-#     for item in store_2_responses['Items']:
-#         qr_id = int(item['qr_id'])
-#         store_2.add(qr_id)
-#     for item in return_tray_responses_store_1['Items']:
-#         qr_id = int(item['qr_id'])
-#         return_tray_store_1.add(qr_id)
-#     for item in return_tray_responses_store_2['Items']:
-#         qr_id = int(item['qr_id'])
-#         return_tray_store_2.add(qr_id)
-    
-#     return jsonify({'status':True, "ts":round(date.timestamp() * 1000), "value":[{"store_id": 1, "ratio": len(return_tray_store_1)/len(store_1)}, {"store_id": 2, "ratio": len(return_tray_store_2)/len(store_2)}]}), 200
-
 #####################################################################################################################
 #
 # STORE METRIC
@@ -484,26 +446,34 @@ def get_ratio_of_people_distance():
             
     return jsonify({'status':True, "message":"test"}), 200
 
+# TOTAL RATIO OF RETURN TRAYS
 @app.route('/number_of_trays', methods=['GET'])
 def get_number_of_trays():
 
     rpi_id = request.args.get('rpi_id', default=None, type=int)
-    
+
     table = DB.Table('object_db')
     res = []
-    date = datetime(2020, 10, 23, 23, 59, 59)
-    prev_day = date - timedelta(days=1)
-    responses = table.scan(
-        FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-    )
-    tray_count = 0
-    for item in responses['Items']:
-        temp_object = item['object'].replace("\'", "\"")
-        objects = json.loads(temp_object)
-        for obj in objects:
-            if obj['object_name'] == "tray":
-                tray_count += 1         
-    return jsonify({'status':True, "number_of_trays": tray_count}), 200
+    date = datetime(2020, 10, 23)
+    total_trays = 0
+    for _ in range(24):
+        next_date = date + timedelta(hours=1)
+        return_tray_responses = table.scan(
+            FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(date.timestamp() * 1000), round(next_date.timestamp() * 1000))
+        )
+        hour_trays = 0
+        for item in return_tray_responses['Items']:
+            temp_object = item['object'].replace("\'", "\"")
+            objects = json.loads(temp_object)
+            for obj in objects:
+                if obj['object_name'] == "tray":
+                    hour_trays += 1
+            hour_trays += 1
+        date = next_date
+        total_trays += hour_trays
+        res.append({"ts":round(date.timestamp() * 1000), "value":hour_trays})
+    
+    return jsonify({'status':True, "value":res, "number_of_trays": total_trays}), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
