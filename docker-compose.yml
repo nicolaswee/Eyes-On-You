@@ -1,0 +1,23 @@
+version: "3.2"
+
+services:
+
+  flask:
+    build: ./flask
+    container_name: flask
+    restart: always
+    environment:
+      - S3_BUCKET=whymark-scripts
+      - S3_KEY=AKIASQJO4U5PVPZRJDCR
+      - S3_SECRET_ACCESS_KEY=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
+      - DB_URI=mongodb+srv://whymark-backend:VFEQOVVppMT5lDKW@whymark-nxzno.mongodb.net/?retryWrites=true&w=majority
+      - PASS_SECRET=whymarkADKN
+    expose:
+      - 8080
+
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
