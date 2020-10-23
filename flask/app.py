@@ -27,16 +27,17 @@ def get_ratio_of_trays():
 
     table = DB.Table('Qr_Table')
     res = []
-    date = datetime.utcnow() + timedelta(hours=8)
+    # date = datetime.utcnow() + timedelta(hours=8)
+    date = datetime(2020, 10, 23, 23, 59, 59)
     total_trays = 0
     total_return_trays = 0
     for _ in range(24):
-        prev_day = date - timedelta(hours=1)
+        prev_date = date - timedelta(hours=1)
         store_responses = table.scan(
-            FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+            FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(prev_date.timestamp() * 1000), round(date.timestamp() * 1000))
         )
         return_tray_responses = table.scan(
-            FilterExpression=Key('rpi_id').eq(2)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+            FilterExpression=Key('rpi_id').eq(2)&Attr('ts').between(round(prev_date.timestamp() * 1000), round(date.timestamp() * 1000))
         )
         store = set()
         return_tray = set()
