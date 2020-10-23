@@ -291,17 +291,55 @@ def get_ratio_of_trays_store():
     
     return jsonify({'status':True, "value":res, "mean": total_return_trays/total_trays}), 200
 
+# Time series of trays going out
+@app.route('/timeseries_tray_out', methods=['GET'])
+def timeseries_tray_out():
+
+    table = DB.Table('qr_db')
+
+    date = datetime(2020, 10, 23)
+ 
+    tmr = datetime(2020, 10, 24)
+
+    time_dict = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0 ,12:0, 13:0, 14:0, 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 23:0}
+
+    in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
+
+    response = table.scan(
+        FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))
+    )
+
+    for item in response['Items']:
+        qr_id = item['qr_id']
+        if qr_id in in_store:
+            in_store.remove(qr_id)
+            hour = abs(item['ts'] - round(date.timestamp() * 1000)) // 3600000
+            try:
+                time_dict[hour] += 1
+            except:
+                pass
+
+        else:
+            in_store.add(qr_id)
+
+    return jsonify({"result": time_dict})
+
+
 #####################################################################################################################
 #
 # TABLE METRIC
 #
 #####################################################################################################################
 
+@app.route('/ratio_of_tray_table', methods=['GET'])
+def get_ratio_of_tray_table():
+    pass
+
 # RATIO OF PEOPLE THAT CLEAR TABLE PER TABLE
 @app.route('/ratio_of_people_table', methods=['GET'])
 def get_ratio_of_people_table():
 
-    rpi_id = request.args.get('rpi_id', default=None, type=str)
+    rpi_id = request.args.get('rpi_id', default=None, type=int)
 
     table = DB.Table('object_db')
     res = []
@@ -344,6 +382,7 @@ def get_ratio_of_people_table():
             
     return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people}), 200
 
+# TIME SPENT AT TABLE AND TIME TO CLEAN
 @app.route('/number_of_tables', methods=['GET'])
 def get_number_of_tables():
 
@@ -396,11 +435,14 @@ def get_number_of_tables():
                 prev_seen_people = item['ts']
             
     return jsonify({'status':True, "mean_time_spent": total_time_used/used_count, "mean_time_not_clean": total_time_not_clean/not_clean_count}), 200
+
 #####################################################################################################################
 #
 # RETURN TRAY METRIC
 #
 #####################################################################################################################
+
+
 
 # TODO: Ratio based on distance for that day [[distance, ratio], [distance, ratio]]
 @app.route('/ratio_of_people_distance', methods=['GET'])
