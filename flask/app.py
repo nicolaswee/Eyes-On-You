@@ -409,42 +409,27 @@ def get_number_of_tables():
 #####################################################################################################################
 
 # TODO: Ratio based on distance for that day [[distance, ratio], [distance, ratio]]
-@app.route('/ratio_of_people_distance', methods=['GET'])
-def get_ratio_of_people_distance():
-    table = DB.Table('Object_Table')
-    res = []
-    date = datetime.utcnow() + timedelta(hours=8)
-    prev_day = date - timedelta(hours=1)
-    responses = table.scan(
-        FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+@app.route('/store_tray_returned', methods=['GET'])
+def store_tray_returned():
+    # table = DB.Table('Object_Table')
+    table = DB.Table('qr_db')
+    # date = datetime.utcnow() + timedelta(hours=8)
+    # prev_day = date - timedelta(hours=1)
+    tray_return_close = table.scan(
+        # FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+        FilterExpression=Key('rpi_id').eq(4)
     )
-    never_clear = 0
-    total_people = 0
-    last_seen_table = float('inf')
-    prev_seen_people = 0
-    
-    for item in responses['Items']:
-        objects = json.loads(item['objects'])
-        curr_people = 0
-        got_table = False
-        if item['ts'] - last_seen_table > 30000:
-            for obj in objects:
-                if obj['object'] == "table":
-                    last_seen_table = obj['ts']
-                    got_table = True
-                elif obj['object'] == "person":
-                    curr_people += 1
-                    total_people += 1
-            if not got_table and curr_people == 0:
-                never_clear += prev_seen_people
-            if not got_table and curr_people != prev_seen_people:
-                prev_seen_people = curr_people
-        else:
-            for obj in objects:
-                if obj['object'] == "table":
-                    last_seen_table = obj['ts']
-            
-    return jsonify({'status':True, "message":"test"}), 200
+
+    tray_return_further = table.scan(
+        # FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+        FilterExpression=Key('rpi_id').eq(5)
+    )
+
+    result = {"rpi_id": 4, "number_of_trays": tray_return_close['Count']}
+    further_result = {"rpi_id": 5, "number_of_trays": tray_return_close['Count']}
+
+    return jsonify({"status": True, "result": [result, further_result]})
+
 
 # TOTAL RATIO OF RETURN TRAYS
 @app.route('/number_of_trays', methods=['GET'])
