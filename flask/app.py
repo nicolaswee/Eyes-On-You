@@ -494,7 +494,9 @@ def get_ratio_of_people_distance():
 
 @app.route('/number_of_trays', methods=['GET'])
 def get_number_of_trays():
+
     rpi_id = request.args.get('rpi_id', default=None, type=int)
+    
     table = DB.Table('object_db')
     res = []
     date = datetime(2020, 10, 23, 23, 59, 59)
