@@ -7,11 +7,8 @@ services:
     container_name: flask
     restart: always
     environment:
-      - S3_BUCKET=whymark-scripts
-      - S3_KEY=AKIASQJO4U5PVPZRJDCR
-      - S3_SECRET_ACCESS_KEY=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
-      - DB_URI=mongodb+srv://whymark-backend:VFEQOVVppMT5lDKW@whymark-nxzno.mongodb.net/?retryWrites=true&w=majority
-      - PASS_SECRET=whymarkADKN
+      - AWS_KEY=AKIA3SOANTWBJUENG223
+      - AWS_SECRET_ACCESS_KEY=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
     expose:
       - 8080
 

@@ -2,7 +2,6 @@ import os, sys, json, time, boto3
 from boto3.dynamodb.conditions import Key, Attr
 from datetime import datetime, timedelta
 from flask import Flask, jsonify, request
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
 from statistics import mean
@@ -14,12 +13,15 @@ CORS(app)
 client = boto3.client(
     'dynamodb',
     aws_access_key_id=os.environ['AWS_KEY'],
-    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'])
+    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    region_name='ap-southeast-1'
+)
         
 DB = boto3.resource(
     'dynamodb',
     aws_access_key_id=os.environ['AWS_KEY'],
-    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY']
+    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+    region_name='ap-southeast-1'
 )
 
 #####################################################################################################################
@@ -90,6 +92,7 @@ def get_ratio_of_people():
         FilterExpression=Key('rpi_id').eq(3)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
     )
     responses = responses_1['Items'] + responses_2['Items']
+    clear_groups = {0:0,1:0,2:0,3:0,4:0}
     got_clear = 0
     total_people = 0
     last_seen_table = float('inf')
@@ -110,6 +113,7 @@ def get_ratio_of_people():
                     curr_chairs += 1
             if curr_chairs == 4:
                 got_clear += curr_chairs - prev_seen_chairs
+                clear_groups[curr_chairs - prev_seen_chairs] += 1
                 total_people += curr_chairs - prev_seen_chairs
                 prev_seen_chairs = curr_chairs
         elif not got_table:
@@ -121,10 +125,12 @@ def get_ratio_of_people():
                 prev_seen_chairs = curr_chairs
             else:
                 prev_seen_chairs = curr_chairs
+        
+    for i in range(1,5):
+        res.append({"size": i, "value": clear_groups[i]})
             
-    return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people}), 200
+    return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "groups_clear": res}), 200
 
-# TODO: [[storeID, ratio],[storeID, ratio]]
 # @app.route('/ratio_of_trays_store_1', methods=['GET'])
 # def get_ratio_of_trays_store_1():
 
@@ -163,19 +169,14 @@ def get_ratio_of_people():
     
 #     return jsonify({'status':True, "ts":round(date.timestamp() * 1000), "value":[{"store_id": 1, "ratio": len(return_tray_store_1)/len(store_1)}, {"store_id": 2, "ratio": len(return_tray_store_2)/len(store_2)}]}), 200
 
-# TODO: [[1, ratio],[2, ratio], [3, ratio], [4,ratio]]
-@app.route('/group_size', methods=['GET'])
-def get_group_size():
+#####################################################################################################################
+#
+# STORE METRIC
+#
+#####################################################################################################################
 
-    client = boto3.client('dynamodb')
-    DB = boto3.resource('dynamodb')
-
-    table = DB.Table('test')
-    
-    return jsonify({'status':True, "message":"test"}), 200
-
-#Number of trays that leave the store and number of trays that were returned
-@app.route("/trays_leave_store", methods=['GET'])
+# NUMBER OF TRAYS
+@app.route("/total_number_trays_leave_store", methods=['GET'])
 def tray_leave_store():
     table = DB.Table('qr_db')
 
@@ -290,7 +291,6 @@ def get_ratio_of_trays_store():
     
     return jsonify({'status':True, "value":res, "mean": total_return_trays/total_trays}), 200
 
-
 #####################################################################################################################
 #
 # TABLE METRIC
@@ -344,40 +344,58 @@ def get_ratio_of_people_table():
             
     return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people}), 200
 
-# TODO: 
 @app.route('/number_of_tables', methods=['GET'])
 def get_number_of_tables():
 
-    table = DB.Table('Qr_Table')
-    res = []
-    date = datetime.utcnow() + timedelta(hours=8)
-    for _ in range(7):
-        prev_day = date - timedelta(days=1)
-        store_responses = table.scan(
-            FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-        )
-        return_tray_responses = table.scan(
-            FilterExpression=Key('rpi_id').eq(2)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-        )
-        store = set()
-        return_tray = set()
-        items = store_responses['Items']
-        for item in items:
-            qr_id = int(item['qr_id'])
-            store.add(qr_id)
-        items = return_tray_responses['Items']
-        for item in items:
-            qr_id = int(item['qr_id'])
-            return_tray.add(qr_id)
-        date = prev_day
-        if len(store) == 0:
-            ratio = 0
-        else:
-            ratio = len(return_tray)/len(store)
-        res.append({"ts":round(date.timestamp() * 1000), "value":ratio})
-    
-    return jsonify({'status':True, "value":res}), 200
+    rpi_id = request.args.get('rpi_id', default=None, type=int)
 
+    table = DB.Table('object_db')
+    res = []
+    date = datetime(2020, 10, 23, 23, 59, 59)
+    prev_day = date - timedelta(days=1)
+    responses = table.scan(
+        FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
+    )
+    used_count = 0
+    first_seen_table = float('inf')
+    total_time_used = 0
+    not_clean_count = 0
+    prev_seen_people = float('inf')
+    total_time_not_clean = 0
+
+    for item in responses['Items']:
+        temp_object = item['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        curr_chairs = 0
+        got_table = False
+        for obj in objects:
+            if obj['object_name'] == "table":
+                got_table = True
+        if got_table:
+            if first_seen_table == float('inf'):
+                    first_seen_table = item['ts']
+            for obj in objects:
+                if obj['object_name'] == "chair":
+                    curr_chairs += 1
+            if curr_chairs == 4:
+                prev_seen_people = float('inf')
+        elif not got_table:
+            if first_seen_table != float('inf'):
+                used_count += 1
+                total_time_used += item['ts'] - first_seen_table
+                first_seen_table = float('inf')
+            for obj in objects:
+                if obj['object_name'] == "chair":
+                    curr_chairs += 1
+            if curr_chairs == 4:
+                if prev_seen_people != float('inf'):
+                    total_time_not_clean += item['ts'] - prev_seen_people
+                    not_clean_count += 1
+                    prev_seen_people = float('inf')
+            elif curr_chairs != 4:
+                prev_seen_people = item['ts']
+            
+    return jsonify({'status':True, "mean_time_spent": total_time_used/used_count, "mean_time_not_clean": total_time_not_clean/not_clean_count}), 200
 #####################################################################################################################
 #
 # RETURN TRAY METRIC
