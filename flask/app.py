@@ -498,32 +498,30 @@ def get_ratio_of_trays_distance():
     output={}
     date = datetime(2020, 10, 23, 23, 59, 59)
     prev_day = date - timedelta(days=1)
+    count = 0
+    total = 0
     responses = table.scan(
         FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
     )
     for item in responses['Items']:
-        print(item['qr_id'],'-',item['ts'])
         if(item['qr_id'] in res):
             res[item['qr_id']].append(item['ts'])
         else:
             res[item['qr_id']]= [item['ts']]
     for trays in res:
         num = len(res.get(trays))
-        if(num == 1):
-            output[trays]=res.get(trays)[0]
-        else:
+        if(num != 1):
             j = 0
             time=0
             for i in range(1,num):
                 time += res.get(trays)[i]-res.get(trays)[j]
                 j +=1
-            output[trays]=time/num
-    print(output)
-        # objects = json.loads(temp_object)
-        # for obj in objects:
-        #     if obj['object_name'] == "tray":
-        #         tray_count += 1         
-    return jsonify({'status':True}), 200
+            count += num - 1
+            output[trays]=time
+    for out in output:
+        total += output.get(out)
+    total = int(float(total))      
+    return jsonify({'status':True, "ratio_of_trays_distance": int(total/count)}), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
