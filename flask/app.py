@@ -441,5 +441,40 @@ def get_ratio_of_people_distance():
             
     return jsonify({'status':True, "message":"test"}), 200
 
+# Time series of trays going out
+@app.route('/timeseries_tray_out', methods=['GET'])
+def timeseries_tray_out():
+
+    table = DB.Table('qr_db')
+
+    date = datetime(2020, 10, 23)
+ 
+    tmr = datetime(2020, 10, 24)
+
+    time_dict = {0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0, 7:0, 8:0, 9:0, 10:0, 11:0 ,12:0, 13:0, 14:0, 15:0, 16:0, 17:0, 18:0, 19:0, 20:0, 21:0, 22:0, 23:0}
+
+    in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
+
+    response = table.scan(
+        FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))
+    )
+
+    for item in response['Items']:
+        qr_id = item['qr_id']
+        if qr_id in in_store:
+            in_store.remove(qr_id)
+            hour = abs(item['ts'] - round(date.timestamp() * 1000)) // 3600000
+            try:
+                time_dict[hour] += 1
+            except:
+                pass
+
+        else:
+            in_store.add(qr_id)
+
+    return jsonify({"result": time_dict})
+
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
