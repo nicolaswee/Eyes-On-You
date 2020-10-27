@@ -425,7 +425,7 @@ def get_number_of_tables():
         not_clean_ratio = int(total_time_not_clean)/not_clean_count
 
             
-    return jsonify({'status':True, "mean_time_spent": 1067000, "mean_time_not_clean": 250200}), 200
+    return jsonify({'status':True, "mean_time_spent": used_count, "mean_time_not_clean": not_clean_ratio}), 200
 
 #####################################################################################################################
 #
