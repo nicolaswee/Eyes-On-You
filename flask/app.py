@@ -153,12 +153,11 @@ def tray_leave_store():
     items = responses['Items']
 
     for item in items:
+        count += 1
         qr_id = item['qr_id']
         if qr_id in in_store:
-            count += 1
             in_store.remove(qr_id)
         else:
-            in_store.add(qr_id)
             trays_returned += 1
 
     return jsonify({"Trays used": count, "Trays returned": trays_returned})
