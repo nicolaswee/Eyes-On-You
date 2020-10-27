@@ -363,7 +363,7 @@ def get_ratio_of_people_table():
         if total_people != 0:
             ratio = got_clear/total_people
             
-    return jsonify({'status':True, "mean": 0.20, "number_of_people_clear": 2, "total_number_of_people": 7, "total_trays": 5, "ratio_of_trays_return": 0.2}), 200
+    return jsonify({'status':True, "mean": ratio, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "total_trays": total_trays, "ratio_of_trays_return": tray_ratio}), 200
 
 # TIME SPENT AT TABLE AND TIME TO CLEAN
 @app.route('/number_of_tables', methods=['GET'])
@@ -521,6 +521,30 @@ def get_ratio_of_trays_distance():
     if count != 0:
         ratio = int(total/count)
     return jsonify({'status':True, "ratio_of_trays_distance": ratio}), 200
+
+#To add to DB
+@app.route('/add', methods=['POST'])
+def add():
+    # 1603504762123
+    rpi_id = request.args.get('rpi_id', default=None, type=int)
+
+    table = DB.Table('object_db')
+    time = 6
+    # for j in range(10):
+    #     time += 2
+    response = table.put_item(
+        Item={
+            "rpi_id": 2, "ts":time, "object":"""[{'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.73486053},
+            {'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.6486053},
+            {'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.6486053},
+            {'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.6486053},
+            {'object_name': 'table', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.53486053}]"""
+            }
+    )
+
+    print(response)
+    return  "true"
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
