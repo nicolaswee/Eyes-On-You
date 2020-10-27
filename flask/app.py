@@ -37,10 +37,10 @@ def get_ratio_of_trays():
     table = DB.Table('qr_db')
     trays = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0}
     res = []
-    date = datetime(2020, 10, 23)
+    date = datetime(2020, 10, 24)
     total_trays = 0
     total_return_trays = 0
-    tmr = datetime(2020, 10, 24)
+    tmr = datetime(2020, 10, 25)
     return_tray_responses_1 = table.scan(
         FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))
     )
@@ -83,7 +83,7 @@ def get_ratio_of_people():
 
     table = DB.Table('object_db')
     res = []
-    date = datetime(2020, 10, 23, 23, 59, 59)
+    date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
     responses_1 = table.scan(
         FilterExpression=Key('rpi_id').eq(2)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
@@ -212,15 +212,15 @@ def get_ratio_of_trays_store():
     table = DB.Table('qr_db')
     trays = {1:0,2:0,3:0,4:0,5:0,6:0,7:0,8:0,9:0,10:0}
     res = []
-    date = datetime(2020, 10, 23)
+    date = datetime(2020, 10, 24)
     total_trays = 0
     total_return_trays = 0
-    tmr = datetime(2020, 10, 24)
+    tmr = datetime(2020, 10, 25)
     return_tray_responses_1 = table.scan(
-        FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(f" {store_id} ")
+        FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
     )
     return_tray_responses_2 = table.scan(
-        FilterExpression=Key('rpi_id').eq(5)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(f" {store_id} ")
+        FilterExpression=Key('rpi_id').eq(5)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
     )
     for item in return_tray_responses_1['Items']:
         qr_id = int(item['qr_id'])
@@ -231,7 +231,7 @@ def get_ratio_of_trays_store():
     for _ in range(24):
         next_date = date + timedelta(hours=1)
         store_responses = table.scan(
-            FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(next_date.timestamp() * 1000))&Attr('store_id').eq(f" {store_id} ")
+            FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(next_date.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
         )
         hour_return_trays = 0
         hour_tray = 0
@@ -258,27 +258,40 @@ def get_ratio_of_trays_store():
 def timeseries_tray_out():
     table = DB.Table('qr_db')
 
-    date = datetime(2020, 10, 23)
-
-    tmr = datetime(2020, 10, 24)
-
+    date = datetime(2020, 10, 24)
     in_store = set([" 1 ", " 2 ", " 3 ", " 4 ", " 5 ", " 6 ", " 7 ", " 8 ", " 9 ", " 10 "])
+    res = []
+    total_trays = 0
 
-    response = table.scan(
-        FilterExpression=Key('rpi_id').eq(1) & Attr('ts').between(round(date.timestamp() * 1000),
-                                                                  round(tmr.timestamp() * 1000))
-    )
-    value = []
-    for item in response['Items']:
-        qr_id = item['qr_id']
-        if qr_id in in_store:
-            in_store.remove(qr_id)
-            value.append({'ts': int(item['ts']), "value": 1})
+    for _ in range(24):
+        next_date = date + timedelta(hours=1)
+        return_tray_responses = table.scan(
+            FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(next_date.timestamp() * 1000))
+        )
+        hour_trays = 0
+        for item in return_tray_responses['Items']:
+            qr_id = item['qr_id']
+            if qr_id in in_store:
+                in_store.remove(qr_id)
+                hour_trays += 1
+            else:
+                in_store.add(qr_id)
+        total_trays += hour_trays
+        date = next_date
+        res.append({"ts":round(date.timestamp() * 1000), "value":hour_trays})
+    
+    return jsonify({'status':True, "value":res, "number_of_trays": total_trays}), 200
+    # value = []
+    # for item in response['Items']:
+    #     qr_id = item['qr_id']
+    #     if qr_id in in_store:
+    #         in_store.remove(qr_id)
+    #         value.append({'ts': int(item['ts']), "value": 1})
 
-        else:
-            in_store.add(qr_id)
+    #     else:
+    #         in_store.add(qr_id)
 
-    return jsonify({"status": True, "value": value})
+    # return jsonify({"status": True, "value": value})
 
 #####################################################################################################################
 #
@@ -294,7 +307,7 @@ def get_ratio_of_people_table():
 
     table = DB.Table('object_db')
     res = []
-    date = datetime(2020, 10, 23, 23, 59, 59)
+    date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
     responses = table.scan(
         FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
@@ -344,8 +357,12 @@ def get_ratio_of_people_table():
         tray_ratio = 0.0
         if total_trays != 0:
             tray_ratio = clean_trays/total_trays
+        
+        ratio = 0.0
+        if total_people != 0:
+            ratio = got_clear/total_people
             
-    return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "total_trays": total_trays, "ratio_of_trays_return": tray_ratio}), 200
+    return jsonify({'status':True, "mean": ratio, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "total_trays": total_trays, "ratio_of_trays_return": tray_ratio}), 200
 
 # TIME SPENT AT TABLE AND TIME TO CLEAN
 @app.route('/number_of_tables', methods=['GET'])
@@ -355,7 +372,7 @@ def get_number_of_tables():
 
     table = DB.Table('object_db')
     res = []
-    date = datetime(2020, 10, 23, 23, 59, 59)
+    date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
     responses = table.scan(
         FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
@@ -398,8 +415,16 @@ def get_number_of_tables():
                     prev_seen_people = float('inf')
             elif curr_chairs != 4:
                 prev_seen_people = item['ts']
+
+    used_ratio = 0.0
+    if used_count != 0:
+        used_ratio = int(total_time_used)/used_count
+    not_clean_ratio = 0.0
+    if not_clean_count != 0:
+        not_clean_ratio = int(total_time_not_clean)/not_clean_count
+
             
-    return jsonify({'status':True, "mean_time_spent": int(total_time_used)/used_count, "mean_time_not_clean": int(total_time_not_clean)/not_clean_count}), 200
+    return jsonify({'status':True, "mean_time_spent": used_count, "mean_time_not_clean": not_clean_ratio}), 200
 
 #####################################################################################################################
 #
@@ -414,18 +439,20 @@ def store_tray_returned():
     table = DB.Table('qr_db')
     # date = datetime.utcnow() + timedelta(hours=8)
     # prev_day = date - timedelta(hours=1)
+    date = datetime(2020, 10, 24)
+    tmr = datetime(2020, 10, 25)
     tray_return_close = table.scan(
         # FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-        FilterExpression=Key('rpi_id').eq(4)
+        FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
     )
 
     tray_return_further = table.scan(
         # FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
-        FilterExpression=Key('rpi_id').eq(5)
+        FilterExpression=Key('rpi_id').eq(5)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
     )
 
     result = {"rpi_id": 4, "number_of_trays": tray_return_close['Count']}
-    further_result = {"rpi_id": 5, "number_of_trays": tray_return_close['Count']}
+    further_result = {"rpi_id": 5, "number_of_trays": tray_return_further['Count']}
 
     return jsonify({"status": True, "result": [result, further_result]})
 
@@ -438,7 +465,7 @@ def get_number_of_trays():
 
     table = DB.Table('object_db')
     res = []
-    date = datetime(2020, 10, 23)
+    date = datetime(2020, 10, 24)
     total_trays = 0
     for _ in range(24):
         next_date = date + timedelta(hours=1)
@@ -452,7 +479,6 @@ def get_number_of_trays():
             for obj in objects:
                 if obj['object_name'] == "tray":
                     hour_trays += 1
-            hour_trays += 1
         date = next_date
         total_trays += hour_trays
         res.append({"ts":round(date.timestamp() * 1000), "value":hour_trays})
@@ -465,7 +491,7 @@ def get_ratio_of_trays_distance():
     table = DB.Table('qr_db')
     res = {}
     output={}
-    date = datetime(2020, 10, 23, 23, 59, 59)
+    date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
     count = 0
     total = 0
@@ -489,8 +515,35 @@ def get_ratio_of_trays_distance():
             output[trays]=time
     for out in output:
         total += output.get(out)
-    total = int(float(total))      
-    return jsonify({'status':True, "ratio_of_trays_distance": int(total/count)}), 200
+    total = int(float(total))
+    ratio = 0
+    if count != 0:
+        ratio = int(total/count)
+    return jsonify({'status':True, "ratio_of_trays_distance": ratio}), 200
+
+#To add to DB
+@app.route('/add', methods=['POST'])
+def add():
+    # 1603504762123
+    rpi_id = request.args.get('rpi_id', default=None, type=int)
+
+    table = DB.Table('object_db')
+    time = 6
+    # for j in range(10):
+    #     time += 2
+    response = table.put_item(
+        Item={
+            "rpi_id": 2, "ts":time, "object":"""[{'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.73486053},
+            {'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.6486053},
+            {'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.6486053},
+            {'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.6486053},
+            {'object_name': 'table', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.53486053}]"""
+            }
+    )
+
+    print(response)
+    return  "true"
+
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
