@@ -490,8 +490,11 @@ def get_ratio_of_trays_distance():
             output[trays]=time
     for out in output:
         total += output.get(out)
-    total = int(float(total))      
-    return jsonify({'status':True, "ratio_of_trays_distance": int(total/count)}), 200
+    total = int(float(total))
+    ratio = 0
+    if count != 0:
+        ratio = int(total/count)
+    return jsonify({'status':True, "ratio_of_trays_distance": ratio}), 200
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
