@@ -314,7 +314,6 @@ def get_ratio_of_people_table():
     )
     got_clear = 0
     total_people = 0
-    prev_seen_chairs = 4
     total_trays = 0
     clean_trays = 0
     outpc = []
@@ -352,27 +351,32 @@ def get_ratio_of_people_table():
                 reset = False
     for i in range(0,len(outpc)):
         chair = 0
+        tray = 0
         item = responses['Items'][outpc[i]]
         temp_object = item['object'].replace("\'", "\"")
         objects = json.loads(temp_object)
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
+                tray += 1
         total_people += (4-chair)
         got_clear+= (4-chair)
-        clean_trays += 1
-        total_trays += 1
+        clean_trays += (4-tray)
+        total_trays += (4-tray)
     for i in range(0,len(outp)):
         chair = 0
+        tray = 0
         item = responses['Items'][outp[i]]
         temp_object = item['object'].replace("\'", "\"")
         objects = json.loads(temp_object)
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
+                tray += 1
         total_people += (4-chair)
-        total_trays += 1
-
+        total_trays += (4-tray)
+    print(total_trays)
+    print(clean_trays)
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
     if total_people != 0:
