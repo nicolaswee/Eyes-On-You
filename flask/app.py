@@ -360,7 +360,6 @@ def get_ratio_of_people_table():
                 chair += 1
             if obj['object_name'] == "tray":
                 tray += 1
-                print(obj)
         total_people += (4-chair)
         got_clear+= (4-chair)
         clean_trays += tray
@@ -378,8 +377,6 @@ def get_ratio_of_people_table():
                 tray += 1
         total_people += (4-chair)
         total_trays += tray
-    print(total_trays)
-    print(clean_trays)
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
     if total_people != 0:
