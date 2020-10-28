@@ -358,12 +358,11 @@ def get_ratio_of_people_table():
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
-            # elif obj['object_name'] == "tray":
-            clean_trays += 1
-            total_trays += 1
-            print(chair)
-            total_people += 4 - chair
-            got_clear+= 4 - chair
+        print(chair)
+        total_people += (4-chair)
+        got_clear+= (4-chair)
+        clean_trays += 1
+        total_trays += 1
     for i in range(0,len(outp)):
         chair = 0
         item = responses['Items'][outp[i]]
@@ -372,11 +371,11 @@ def get_ratio_of_people_table():
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
-            total_trays += 1
-            print(chair)
-            total_people += 4 - chair
-    print(total_trays)
-    print(got_clear)
+        print(chair)
+        total_people += (4-chair)
+        total_trays += 1
+    print(len(outp))
+    print(len(outpc)) 
     print(total_people)
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
