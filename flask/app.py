@@ -329,6 +329,7 @@ def get_ratio_of_people_table():
     total_time = 0 
     tray_ratio = 0.0 
     ratio = 0.0
+    count = 0
     for i in range(0, len(responses['Items'])):
         item = responses['Items'][i]
         temp_object = item['object'].replace("\'", "\"")
@@ -345,17 +346,16 @@ def get_ratio_of_people_table():
                     curr_chairs += 1
             if curr_chairs >= 4 and resetc == False:
                 outpc.append(i-1)
-                #end
                 end  = responses['Items'][i-1]['ts']
                 treset1 = False
                 resetc = True
                 if end != 0 and start != 0:
                     total_time += (end - start)
+                    count += 1
                     end  = 0
                     start = 0
             elif curr_chairs < 4 and treset1 == False :
                 treset1 = True
-                #start
                 start = responses['Items'][i]['ts']
                 resetc = False
         elif not got_table:
@@ -369,6 +369,7 @@ def get_ratio_of_people_table():
                 reset = True
                 if end2 != 0 and start2 != 0:
                     total_time += (end2 - start2)
+                    count += 1
                     end2  = 0
                     start2 = 0
             elif curr_chairs < 4 and treset2 == False:
@@ -413,7 +414,7 @@ def get_ratio_of_people_table():
         got_clear += ttray - tray
         clean_trays += ttray - tray
         total_trays += ttray
-    print(total_time/(len(outpc)+len(outp)))
+    print(total_time/count)
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
     if total_people != 0:
