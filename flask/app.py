@@ -305,7 +305,7 @@ def get_ratio_of_people_table():
 
     rpi_id = request.args.get('rpi_id', default=None, type=int)
 
-    table = DB.Table('object_db')
+    table = DB.Table('ObjectDb')
     res = []
     date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
@@ -393,16 +393,26 @@ def get_ratio_of_people_table():
     for i in range(0,len(outp)):
         chair = 0
         tray = 0
+        ttray = 0
+        cchair = 0
         item = responses['Items'][outp[i]]
+        item2 = responses['Items'][outp[i]+1]
         temp_object = item['object'].replace("\'", "\"")
+        temp_object2 = item2['object'].replace("\'", "\"")
         objects = json.loads(temp_object)
+        objects2 = json.loads(temp_object2)
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
             if obj['object_name'] == "tray":
+                ttray += 1
+        for obj2 in objects2:
+            if obj2['object_name'] == "tray":
                 tray += 1
         total_people += (4-chair)
-        total_trays += tray
+        got_clear += ttray - tray
+        clean_trays += ttray - tray
+        total_trays += ttray
     print(total_time/(len(outpc)+len(outp)))
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
