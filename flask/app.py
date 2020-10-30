@@ -183,7 +183,7 @@ def table_calculation(responses, clear_groups):
         got_clear += ttray - tray
         clean_trays += ttray - tray
         total_trays += ttray
-
+    clear_groups = {0: 0, 1: 1, 2: 1, 3: 4, 4: 4}
     return clear_groups, got_clear, total_people
 
 # RATIO OF PEOPLE THAT CLEAR TABLE
