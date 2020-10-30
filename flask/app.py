@@ -77,11 +77,120 @@ def get_ratio_of_trays():
     
     return jsonify({'status':True, "value":res, "mean": total_return_trays/total_trays}), 200
 
+def table_calculation(responses, clear_groups):
+    got_clear = 0
+    total_people = 0
+    total_trays = 0
+    clean_trays = 0
+    outpc = []
+    outp = []
+    resetc = False
+    reset = False
+    treset1 = False
+    treset2 = False
+    start = 0
+    end = 0
+    start2 = 0
+    end2 = 0
+    total_time = 0
+    tray_ratio = 0.0
+    ratio = 0.0
+    count = 0
+    for i in range(0, len(responses['Items'])):
+        item = responses['Items'][i]
+        temp_object = item['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        curr_chairs = 0
+        got_table = False
+        for obj in objects:
+            if obj['object_name'] == "table":
+                got_table = True
+        if got_table:
+
+            for obj in objects:
+                if obj['object_name'] == "chair":
+                    curr_chairs += 1
+            if curr_chairs >= 4 and resetc == False:
+                outpc.append(i - 1)
+                end = responses['Items'][i]['ts']
+                treset1 = False
+                resetc = True
+                if end != 0 and start != 0:
+                    total_time += (end - start)
+                    if (end - start) != 0:
+                        count += 1
+                    end = 0
+                    start = 0
+            elif curr_chairs < 4 and treset1 == False:
+                treset1 = True
+                start = responses['Items'][i]['ts']
+                resetc = False
+        elif not got_table:
+            for obj in objects:
+                if obj['object_name'] == "chair":
+                    curr_chairs += 1
+            if curr_chairs >= 4 and reset == False:
+                outp.append(i - 1)
+                end2 = responses['Items'][i]['ts']
+                treset2 = False
+                reset = True
+                if end2 != 0 and start2 != 0:
+                    total_time += (end2 - start2)
+                    if (end2 - start2) != 0:
+                        count += 1
+                    end2 = 0
+                    start2 = 0
+            elif curr_chairs < 4 and treset2 == False:
+                treset2 = True
+                reset = False
+                start2 = responses['Items'][i]['ts']
+    for i in range(0, len(outpc)):
+        chair = 0
+        tray = 0
+        item = responses['Items'][outpc[i]]
+        temp_object = item['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        for obj in objects:
+            if obj['object_name'] == "chair":
+                chair += 1
+            if obj['object_name'] == "tray":
+                tray += 1
+        total_people += (4 - chair)
+        clear_groups[(4-chair)] += 1
+        got_clear += (4 - chair)
+        clean_trays += tray
+        total_trays += tray
+    for i in range(0, len(outp)):
+        chair = 0
+        tray = 0
+        ttray = 0
+        cchair = 0
+        item = responses['Items'][outp[i]]
+        item2 = responses['Items'][outp[i] + 1]
+        temp_object = item['object'].replace("\'", "\"")
+        temp_object2 = item2['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        objects2 = json.loads(temp_object2)
+        for obj in objects:
+            if obj['object_name'] == "chair":
+                chair += 1
+            if obj['object_name'] == "tray":
+                ttray += 1
+        for obj2 in objects2:
+            if obj2['object_name'] == "tray":
+                tray += 1
+        total_people += (4 - chair)
+        got_clear += ttray - tray
+        clean_trays += ttray - tray
+        total_trays += ttray
+
+    return clear_groups, got_clear, total_people
+
 # RATIO OF PEOPLE THAT CLEAR TABLE
 @app.route('/ratio_of_people', methods=['GET'])
 def get_ratio_of_people():
-
-    table = DB.Table('object_db')
+    clear_groups = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
+    table = DB.Table('ObjectDb')
     res = []
     date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
@@ -91,44 +200,47 @@ def get_ratio_of_people():
     responses_2 = table.scan(
         FilterExpression=Key('rpi_id').eq(3)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
     )
-    responses = responses_1['Items'] + responses_2['Items']
-    clear_groups = {0:0,1:0,2:0,3:0,4:0}
-    got_clear = 0
-    total_people = 0
-    last_seen_table = float('inf')
-    prev_seen_chairs = 4
+    # responses = responses_1['Items'] + responses_2['Items']
+    clear_groups, got_clear, total_people = table_calculation(responses_1, clear_groups)
+    clear_groups, got_clear2, total_people2 = table_calculation(responses_2, clear_groups)
+    # got_clear = 0
+    # total_people = 0
+    # last_seen_table = float('inf')
+    # prev_seen_chairs = 4
 
-    for item in responses:
-        temp_object = item['object'].replace("\'", "\"")
-        objects = json.loads(temp_object)
-        curr_chairs = 0
-        got_table = False
-        for obj in objects:
-            if obj['object_name'] == "table":
-                last_seen_table = item['ts']
-                got_table = True
-        if got_table:
-            for obj in objects:
-                if obj['object_name'] == "chair":
-                    curr_chairs += 1
-            if curr_chairs == 4:
-                got_clear += curr_chairs - prev_seen_chairs
-                clear_groups[curr_chairs - prev_seen_chairs] += 1
-                total_people += curr_chairs - prev_seen_chairs
-                prev_seen_chairs = curr_chairs
-        elif not got_table:
-            for obj in objects:
-                if obj['object_name'] == "chair":
-                    curr_chairs += 1
-            if curr_chairs == 4:
-                total_people += curr_chairs - prev_seen_chairs
-                prev_seen_chairs = curr_chairs
-            else:
-                prev_seen_chairs = curr_chairs
-        
+
+    # for item in responses:
+    #     temp_object = item['object'].replace("\'", "\"")
+    #     objects = json.loads(temp_object)
+    #     curr_chairs = 0
+    #     got_table = False
+    #     for obj in objects:
+    #         if obj['object_name'] == "table":
+    #             last_seen_table = item['ts']
+    #             got_table = True
+    #     if got_table:
+    #         for obj in objects:
+    #             if obj['object_name'] == "chair":
+    #                 curr_chairs += 1
+    #         if curr_chairs == 4:
+    #             got_clear += curr_chairs - prev_seen_chairs
+    #             clear_groups[curr_chairs - prev_seen_chairs] += 1
+    #             total_people += curr_chairs - prev_seen_chairs
+    #             prev_seen_chairs = curr_chairs
+    #     elif not got_table:
+    #         for obj in objects:
+    #             if obj['object_name'] == "chair":
+    #                 curr_chairs += 1
+    #         if curr_chairs == 4:
+    #             total_people += curr_chairs - prev_seen_chairs
+    #             prev_seen_chairs = curr_chairs
+    #         else:
+    #             prev_seen_chairs = curr_chairs
+    #
     for i in range(1,5):
         res.append({"size": i, "value": clear_groups[i]})
-            
+    got_clear += got_clear2
+    total_people += total_people2
     return jsonify({'status':True, "mean": got_clear/total_people, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "groups_clear": res}), 200
 
 #####################################################################################################################
@@ -143,11 +255,14 @@ def tray_leave_store():
     table = DB.Table('qr_db')
 
     in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
+
     date = datetime(2020, 10, 24)
     tmr = datetime(2020, 10, 25)
+
     responses = table.scan(
         FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))
     )
+
 
     count = 0
     trays_returned = 0
@@ -309,7 +424,7 @@ def get_ratio_of_people_table():
 
     rpi_id = request.args.get('rpi_id', default=None, type=int)
 
-    table = DB.Table('object_db')
+    table = DB.Table('ObjectDb')
     res = []
     date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
@@ -318,55 +433,116 @@ def get_ratio_of_people_table():
     )
     got_clear = 0
     total_people = 0
-    last_seen_table = float('inf')
-    prev_seen_chairs = 4
     total_trays = 0
-    curr_trays = 0
     clean_trays = 0
-
-    for item in responses['Items']:
+    outpc = []
+    outp=[]
+    resetc = False
+    reset = False
+    treset1 = False
+    treset2 = False
+    start  = 0
+    end = 0
+    start2  = 0
+    end2 = 0
+    total_time = 0 
+    tray_ratio = 0.0 
+    ratio = 0.0
+    count = 0
+    for i in range(0, len(responses['Items'])):
+        item = responses['Items'][i]
         temp_object = item['object'].replace("\'", "\"")
         objects = json.loads(temp_object)
         curr_chairs = 0
         got_table = False
         for obj in objects:
             if obj['object_name'] == "table":
-                last_seen_table = item['ts']
                 got_table = True
         if got_table:
+            
             for obj in objects:
                 if obj['object_name'] == "chair":
                     curr_chairs += 1
-            if curr_chairs == 4:
-                total_trays += curr_trays
-                clean_trays += curr_trays
-                curr_trays = 0
-                got_clear += curr_chairs - prev_seen_chairs
-                total_people += curr_chairs - prev_seen_chairs
-                prev_seen_chairs = curr_chairs
+            if curr_chairs >= 4 and resetc == False:
+                outpc.append(i-1)
+                end  = responses['Items'][i]['ts']
+                treset1 = False
+                resetc = True
+                if end != 0 and start != 0:
+                    total_time += (end - start)
+                    if (end-start) != 0:
+                        count += 1
+                    end  = 0
+                    start = 0
+            elif curr_chairs < 4 and treset1 == False :
+                treset1 = True
+                start = responses['Items'][i]['ts']
+                resetc = False
         elif not got_table:
             for obj in objects:
                 if obj['object_name'] == "chair":
                     curr_chairs += 1
-                elif obj['object_name'] == "tray":
-                    curr_trays += 1
-            if curr_chairs == 4:
-                total_trays += curr_trays
-                curr_trays = 0
-                total_people += curr_chairs - prev_seen_chairs
-                prev_seen_chairs = curr_chairs
-            else:
-                prev_seen_chairs = curr_chairs
+            if curr_chairs >= 4 and reset == False:
+                outp.append(i-1)
+                end2 = responses['Items'][i]['ts']
+                treset2 = False
+                reset = True
+                if end2 != 0 and start2 != 0:
+                    total_time += (end2 - start2)
+                    if(end2-start2)!=0:
+                        count += 1
+                    end2  = 0
+                    start2 = 0
+            elif curr_chairs < 4 and treset2 == False:
+                treset2 = True
+                reset = False
+                start2 = responses['Items'][i]['ts']
+    for i in range(0,len(outpc)):
+        chair = 0
+        tray = 0
+        item = responses['Items'][outpc[i]]
+        temp_object = item['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        for obj in objects:
+            if obj['object_name'] == "chair":
+                chair += 1
+            if obj['object_name'] == "tray":
+                tray += 1
+        total_people += (4-chair)
+        got_clear+= (4-chair)
+        clean_trays += tray
+        total_trays += tray
+    for i in range(0,len(outp)):
+        chair = 0
+        tray = 0
+        ttray = 0
+        cchair = 0
+        item = responses['Items'][outp[i]]
+        item2 = responses['Items'][outp[i]+1]
+        temp_object = item['object'].replace("\'", "\"")
+        temp_object2 = item2['object'].replace("\'", "\"")
+        objects = json.loads(temp_object)
+        objects2 = json.loads(temp_object2)
+        for obj in objects:
+            if obj['object_name'] == "chair":
+                chair += 1
+            if obj['object_name'] == "tray":
+                ttray += 1
+        for obj2 in objects2:
+            if obj2['object_name'] == "tray":
+                tray += 1
+        total_people += (4-chair)
+        got_clear += ttray - tray
+        clean_trays += ttray - tray
+        total_trays += ttray
+    print(total_time/count)
+    if total_trays != 0:
+        tray_ratio = clean_trays/total_trays
+    if total_people != 0:
+        ratio = got_clear/total_people
 
-        tray_ratio = 0.0
-        if total_trays != 0:
-            tray_ratio = clean_trays/total_trays
-        
-        ratio = 0.0
-        if total_people != 0:
-            ratio = got_clear/total_people
-            
-    return jsonify({'status':True, "mean": ratio, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "total_trays": total_trays, "ratio_of_trays_return": tray_ratio}), 200
+    avg_time = float(total_time/(len(outpc)+len(outp)))
+    return jsonify({'status':True, "mean": ratio, "number_of_people_clear": got_clear, "total_number_of_people": total_people, "total_trays": total_trays, "ratio_of_trays_return": tray_ratio, "average_time_spent":avg_time}), 200
 
 # TIME SPENT AT TABLE AND TIME TO CLEAN
 @app.route('/number_of_tables', methods=['GET'])
@@ -471,7 +647,7 @@ def get_number_of_trays():
     res = []
     date = datetime(2020, 10, 24)
     total_trays = 0
-    for _ in range(24):
+    for _ in range(12):
         next_date = date + timedelta(hours=1)
         return_tray_responses = table.scan(
             FilterExpression=Key('rpi_id').eq(rpi_id)&Attr('ts').between(round(date.timestamp() * 1000), round(next_date.timestamp() * 1000))
