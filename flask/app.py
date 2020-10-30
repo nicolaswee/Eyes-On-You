@@ -89,9 +89,13 @@ def table_calculation(responses, clear_groups):
     treset1 = False
     treset2 = False
     start = 0
+    end = 0
     start2 = 0
+    end2 = 0
     total_time = 0
-
+    tray_ratio = 0.0
+    ratio = 0.0
+    count = 0
     for i in range(0, len(responses['Items'])):
         item = responses['Items'][i]
         temp_object = item['object'].replace("\'", "\"")
@@ -108,17 +112,17 @@ def table_calculation(responses, clear_groups):
                     curr_chairs += 1
             if curr_chairs >= 4 and resetc == False:
                 outpc.append(i - 1)
-                # end
-                end = responses['Items'][i - 1]['ts']
+                end = responses['Items'][i]['ts']
                 treset1 = False
                 resetc = True
                 if end != 0 and start != 0:
                     total_time += (end - start)
+                    if (end - start) != 0:
+                        count += 1
                     end = 0
                     start = 0
             elif curr_chairs < 4 and treset1 == False:
                 treset1 = True
-                # start
                 start = responses['Items'][i]['ts']
                 resetc = False
         elif not got_table:
@@ -127,11 +131,13 @@ def table_calculation(responses, clear_groups):
                     curr_chairs += 1
             if curr_chairs >= 4 and reset == False:
                 outp.append(i - 1)
-                end2 = responses['Items'][i - 1]['ts']
+                end2 = responses['Items'][i]['ts']
                 treset2 = False
                 reset = True
                 if end2 != 0 and start2 != 0:
                     total_time += (end2 - start2)
+                    if (end2 - start2) != 0:
+                        count += 1
                     end2 = 0
                     start2 = 0
             elif curr_chairs < 4 and treset2 == False:
@@ -149,25 +155,34 @@ def table_calculation(responses, clear_groups):
                 chair += 1
             if obj['object_name'] == "tray":
                 tray += 1
-        clear_groups[chair] += 1
         total_people += (4 - chair)
+        clear_groups[(4-chair)] += 1
         got_clear += (4 - chair)
         clean_trays += tray
         total_trays += tray
-
     for i in range(0, len(outp)):
         chair = 0
         tray = 0
+        ttray = 0
+        cchair = 0
         item = responses['Items'][outp[i]]
+        item2 = responses['Items'][outp[i] + 1]
         temp_object = item['object'].replace("\'", "\"")
+        temp_object2 = item2['object'].replace("\'", "\"")
         objects = json.loads(temp_object)
+        objects2 = json.loads(temp_object2)
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
             if obj['object_name'] == "tray":
+                ttray += 1
+        for obj2 in objects2:
+            if obj2['object_name'] == "tray":
                 tray += 1
         total_people += (4 - chair)
-        total_trays += tray
+        got_clear += ttray - tray
+        clean_trays += ttray - tray
+        total_trays += ttray
 
     return clear_groups, got_clear, total_people
 
@@ -175,7 +190,7 @@ def table_calculation(responses, clear_groups):
 @app.route('/ratio_of_people', methods=['GET'])
 def get_ratio_of_people():
     clear_groups = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
-    table = DB.Table('object_db')
+    table = DB.Table('ObjectDb')
     res = []
     date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
