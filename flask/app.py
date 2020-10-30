@@ -426,6 +426,7 @@ def get_ratio_of_people_table():
     total_time = 0 
     tray_ratio = 0.0 
     ratio = 0.0
+    count = 0
     for i in range(0, len(responses['Items'])):
         item = responses['Items'][i]
         temp_object = item['object'].replace("\'", "\"")
@@ -442,17 +443,16 @@ def get_ratio_of_people_table():
                     curr_chairs += 1
             if curr_chairs >= 4 and resetc == False:
                 outpc.append(i-1)
-                #end
                 end  = responses['Items'][i-1]['ts']
                 treset1 = False
                 resetc = True
                 if end != 0 and start != 0:
                     total_time += (end - start)
+                    count += 1
                     end  = 0
                     start = 0
             elif curr_chairs < 4 and treset1 == False :
                 treset1 = True
-                #start
                 start = responses['Items'][i]['ts']
                 resetc = False
         elif not got_table:
@@ -466,6 +466,7 @@ def get_ratio_of_people_table():
                 reset = True
                 if end2 != 0 and start2 != 0:
                     total_time += (end2 - start2)
+                    count += 1
                     end2  = 0
                     start2 = 0
             elif curr_chairs < 4 and treset2 == False:
@@ -490,17 +491,27 @@ def get_ratio_of_people_table():
     for i in range(0,len(outp)):
         chair = 0
         tray = 0
+        ttray = 0
+        cchair = 0
         item = responses['Items'][outp[i]]
+        item2 = responses['Items'][outp[i]+1]
         temp_object = item['object'].replace("\'", "\"")
+        temp_object2 = item2['object'].replace("\'", "\"")
         objects = json.loads(temp_object)
+        objects2 = json.loads(temp_object2)
         for obj in objects:
             if obj['object_name'] == "chair":
                 chair += 1
             if obj['object_name'] == "tray":
+                ttray += 1
+        for obj2 in objects2:
+            if obj2['object_name'] == "tray":
                 tray += 1
         total_people += (4-chair)
-        total_trays += tray
-    print(total_time/(len(outpc)+len(outp)))
+        got_clear += ttray - tray
+        clean_trays += ttray - tray
+        total_trays += ttray
+    print(total_time/count)
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
     if total_people != 0:
