@@ -143,9 +143,10 @@ def tray_leave_store():
     table = DB.Table('qr_db')
 
     in_store = set([" 1 "," 2 "," 3 "," 4 "," 5 "," 6 "," 7 "," 8 "," 9 "," 10 "])
-
+    date = datetime(2020, 10, 24)
+    tmr = datetime(2020, 10, 25)
     responses = table.scan(
-        FilterExpression=Key('rpi_id').eq(1)
+        FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))
     )
 
     count = 0
@@ -183,8 +184,11 @@ def tray_average_rate():
     time_dictionary = {}
     list_of_times = []
 
+    date = datetime(2020, 10, 24)
+    tmr = datetime(2020, 10, 25)
+
     response = table.scan(
-        FilterExpression=Key('rpi_id').eq(1)
+        FilterExpression=Key('rpi_id').eq(1)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))
     )
 
     items = response['Items']
