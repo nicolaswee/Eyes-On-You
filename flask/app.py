@@ -443,12 +443,13 @@ def get_ratio_of_people_table():
                     curr_chairs += 1
             if curr_chairs >= 4 and resetc == False:
                 outpc.append(i-1)
-                end  = responses['Items'][i-1]['ts']
+                end  = responses['Items'][i]['ts']
                 treset1 = False
                 resetc = True
                 if end != 0 and start != 0:
                     total_time += (end - start)
-                    count += 1
+                    if (end-start) != 0:
+                        count += 1
                     end  = 0
                     start = 0
             elif curr_chairs < 4 and treset1 == False :
@@ -461,12 +462,13 @@ def get_ratio_of_people_table():
                     curr_chairs += 1
             if curr_chairs >= 4 and reset == False:
                 outp.append(i-1)
-                end2 = responses['Items'][i-1]['ts']
+                end2 = responses['Items'][i]['ts']
                 treset2 = False
                 reset = True
                 if end2 != 0 and start2 != 0:
                     total_time += (end2 - start2)
-                    count += 1
+                    if(end2-start2)!=0:
+                        count += 1
                     end2  = 0
                     start2 = 0
             elif curr_chairs < 4 and treset2 == False:
