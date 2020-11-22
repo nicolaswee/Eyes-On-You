@@ -190,7 +190,7 @@ def table_calculation(responses, clear_groups):
 @app.route('/ratio_of_people', methods=['GET'])
 def get_ratio_of_people():
     clear_groups = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
-    table = DB.Table('ObjectDb')
+    table = DB.Table('object_db')
     res = []
     date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
@@ -200,43 +200,8 @@ def get_ratio_of_people():
     responses_2 = table.scan(
         FilterExpression=Key('rpi_id').eq(3)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
     )
-    # responses = responses_1['Items'] + responses_2['Items']
     clear_groups, got_clear, total_people = table_calculation(responses_1, clear_groups)
     clear_groups, got_clear2, total_people2 = table_calculation(responses_2, clear_groups)
-    # got_clear = 0
-    # total_people = 0
-    # last_seen_table = float('inf')
-    # prev_seen_chairs = 4
-
-
-    # for item in responses:
-    #     temp_object = item['object'].replace("\'", "\"")
-    #     objects = json.loads(temp_object)
-    #     curr_chairs = 0
-    #     got_table = False
-    #     for obj in objects:
-    #         if obj['object_name'] == "table":
-    #             last_seen_table = item['ts']
-    #             got_table = True
-    #     if got_table:
-    #         for obj in objects:
-    #             if obj['object_name'] == "chair":
-    #                 curr_chairs += 1
-    #         if curr_chairs == 4:
-    #             got_clear += curr_chairs - prev_seen_chairs
-    #             clear_groups[curr_chairs - prev_seen_chairs] += 1
-    #             total_people += curr_chairs - prev_seen_chairs
-    #             prev_seen_chairs = curr_chairs
-    #     elif not got_table:
-    #         for obj in objects:
-    #             if obj['object_name'] == "chair":
-    #                 curr_chairs += 1
-    #         if curr_chairs == 4:
-    #             total_people += curr_chairs - prev_seen_chairs
-    #             prev_seen_chairs = curr_chairs
-    #         else:
-    #             prev_seen_chairs = curr_chairs
-    #
     for i in range(1,5):
         res.append({"size": i, "value": clear_groups[i]})
     got_clear += got_clear2
@@ -277,19 +242,6 @@ def tray_leave_store():
             trays_returned += 1
 
     return jsonify({"Trays used": count, "Trays returned": trays_returned})
-
-#Don't need this but just keep in codebase
-# def tray_calculation(item_list):
-#     if len(item_list) != 0:
-#         first = item_list[0]
-#         timings = []
-#         for i in range(1,len(item_list)):
-#             timings.append(item_list[i]['ts'] - first['ts'])
-#             first = item_list[i]
-#
-#         return float(mean(timings)), float(sum(timings))
-#
-#     return 0,0
 
 # AVERAGE TIME FOR TRAYS TO RETURN
 @app.route("/tray_average_rate", methods=['GET'])
@@ -400,18 +352,6 @@ def timeseries_tray_out():
         res.append({"ts":round(date.timestamp() * 1000), "value":hour_trays})
     
     return jsonify({'status':True, "value":res, "number_of_trays": total_trays}), 200
-    # value = []
-    # for item in response['Items']:
-    #     qr_id = item['qr_id']
-    #     if qr_id in in_store:
-    #         in_store.remove(qr_id)
-    #         value.append({'ts': int(item['ts']), "value": 1})
-
-    #     else:
-    #         in_store.add(qr_id)
-
-    # return jsonify({"status": True, "value": value})
-
 #####################################################################################################################
 #
 # TABLE METRIC
@@ -424,7 +364,7 @@ def get_ratio_of_people_table():
 
     rpi_id = request.args.get('rpi_id', default=None, type=int)
 
-    table = DB.Table('ObjectDb')
+    table = DB.Table('object_db')
     res = []
     date = datetime(2020, 10, 24, 23, 59, 59)
     prev_day = date - timedelta(days=1)
@@ -535,7 +475,6 @@ def get_ratio_of_people_table():
         got_clear += ttray - tray
         clean_trays += ttray - tray
         total_trays += ttray
-    print(total_time/count)
     if total_trays != 0:
         tray_ratio = clean_trays/total_trays
     if total_people != 0:
@@ -615,28 +554,20 @@ def get_number_of_tables():
 # TODO: Ratio based on distance for that day [[distance, ratio], [distance, ratio]]
 @app.route('/store_tray_returned', methods=['GET'])
 def store_tray_returned():
-    # table = DB.Table('Object_Table')
     table = DB.Table('qr_db')
-    # date = datetime.utcnow() + timedelta(hours=8)
-    # prev_day = date - timedelta(hours=1)
     date = datetime(2020, 10, 24)
     tmr = datetime(2020, 10, 25)
     tray_return_close = table.scan(
-        # FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
         FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
     )
-
     tray_return_further = table.scan(
-        # FilterExpression=Key('rpi_id').eq(4)&Attr('ts').between(round(prev_day.timestamp() * 1000), round(date.timestamp() * 1000))
         FilterExpression=Key('rpi_id').eq(5)&Attr('ts').between(round(date.timestamp() * 1000), round(tmr.timestamp() * 1000))&Attr('store_id').eq(" 1 ")
     )
-
     result = {"rpi_id": 4, "number_of_trays": tray_return_close['Count']}
     further_result = {"rpi_id": 5, "number_of_trays": tray_return_further['Count']}
 
     return jsonify({"status": True, "result": [result, further_result]})
-
-
+    
 # TOTAL RATIO OF RETURN TRAYS
 @app.route('/number_of_trays', methods=['GET'])
 def get_number_of_trays():
@@ -704,13 +635,9 @@ def get_ratio_of_trays_distance():
 #To add to DB
 @app.route('/add', methods=['POST'])
 def add():
-    # 1603504762123
     rpi_id = request.args.get('rpi_id', default=None, type=int)
-
     table = DB.Table('object_db')
     time = 6
-    # for j in range(10):
-    #     time += 2
     response = table.put_item(
         Item={
             "rpi_id": 2, "ts":time, "object":"""[{'object_name': 'chair', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.73486053},
@@ -720,10 +647,6 @@ def add():
             {'object_name': 'table', 'ymin': 206, 'ymax': 257, 'xmin': 592, 'xmax': 640, 'confidence': 0.53486053}]"""
             }
     )
-
-    print(response)
     return  "true"
-
-
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
