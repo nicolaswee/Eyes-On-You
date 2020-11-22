@@ -1,0 +1,12 @@
+item {
+    id: 1
+    name: 'tray'
+}
+item {
+    id: 2
+    name: 'table'
+}
+item {
+    id: 1
+    name: 'chair'
+}
