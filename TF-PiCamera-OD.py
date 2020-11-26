@@ -28,7 +28,7 @@ def on_message(client, userdata, msg):                                          
 mqttc = paho.Client()                                                               # mqttc object
 mqttc.on_connect = on_connect                                                       # assign on_connect func
 mqttc.on_message = on_message
-awshost = "a177q8cgn9d0hx-ats.iot.ap-southeast-1.amazonaws.com"                     # Endpoint
+awshost = "AWS_ENDPOINT"                     # Endpoint
 awsport = 8883                                                                      # Port no.   
 clientId = "IoTProject_client"                                                      # Thing_Name
 thingName = "IoTProject_client"                                                     # Thing_Name
