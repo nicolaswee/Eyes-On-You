@@ -1,0 +1,6 @@
+Flask_Cors==3.0.8
+Flask==1.0.2
+python-dotenv==0.13.0
+uwsgi
+dnspython
+boto3==1.14.60
