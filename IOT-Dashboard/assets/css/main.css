@@ -1,0 +1,31 @@
+:root{
+    --color-white: #FFF;
+    --color-main: #A0B2E4;
+    --color-highlight: #859AD5;
+    --color-border: #D1DAF2;
+    --color-success: #A1E3BA;
+    --color-error: #EAA7B6;
+    --color-yellow: #FFE88A;
+    --color-faded: #F5F7FD;
+}
+
+*{
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.log-page{
+    width: 100%;
+    background-color: var(--color-main);
+    padding: 25px 25px 0 25px;
+    color: var(--color-white);
+}
+.chart-container{
+    background-color: white;
+    padding: 25px;
+    border-radius: 25px;
+    color: var(--color-highlight);
+    width: auto;
+    margin-bottom: 25px;
+}
