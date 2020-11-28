@@ -60,6 +60,6 @@ export default {
     }
   },
   env: {
-    BASEAPIURL: "http://13.212.86.234"
+    BASEAPIURL: ""
   }
 }
